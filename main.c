@@ -29,6 +29,12 @@ void initializeApplication(void);
 extern const int GRID_PANE, STATE_PANE;
 extern int gMainWindow, gSubwindow[2];
 
+struct pushData
+{
+  char direction;
+  int numSpaces;
+};
+
 //	Don't rename any of these variables
 //-------------------------------------
 //	The state grid and its dimensions (arguments to the program)
@@ -369,5 +375,65 @@ void initializeApplication(void) {
     //	and robots, and create threads (not necessarily in that order).
     //	For the handout I have nothing to do.
 }
+void initializeBot(int botNum)
+{
+  //we neee to Check if grid boxX, boxY-1 is available
+  // if boxX and boxY -1 is available
+  robotLoc[botNum][0] = boxLoc[botNum][0];
+  robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+}
 
+struct pushData compBoxnDoor(int boxNum)
+{
+  struct pushData pushInfo;
 
+  if(boxLoc[boxNum][0] == doorLoc[boxNum][0]) // if x is the same
+  {
+    if(boxLoc[boxNum][1] == doorLoc[boxNum][1]) // if y is the same
+    {
+      pushInfo.direction = 'A';
+      pushInfo.numSpaces = 0;
+    }
+    else if (boxLoc[boxNum][1] < doorLoc[boxNum][1]) // if box is directly below the door
+    {
+      pushInfo.direction = 'N';
+      pushInfo.numSpaces = doorLoc[boxNum][1] - boxLoc[boxNum][1];
+
+    }
+    else
+    {
+      pushInfo.direction = 'S';
+      pushInfo.numSpaces = boxLoc[boxNum][1] - doorLoc[boxNum][1];
+    }
+  }
+  else if (boxLoc[boxNum][1] == doorLoc[boxNum][1]) // if y is the same
+  {
+    if (boxLoc[boxNum][0] == doorLoc[boxNum][0]) // not sure if redundant
+    {
+      pushInfo.direction = 'A';
+      pushInfo.numSpaces = 0;
+    }
+    else if (boxLoc[boxNum][0] < doorLoc[boxNum][0])
+    {
+      pushInfo.direction = 'E';
+      pushInfo.numSpaces = doorLoc[boxNum][0] - boxLoc[boxNum][0];
+    }
+    else
+    {
+      pushInfo.direction = 'W';
+      pushInfo.numSpaces = boxLoc[boxNum][0] - doorLoc[boxNum][0];
+    }
+  }
+  else if (boxLoc[boxNum][0] < doorLoc[boxNum][0])
+  {
+    pushInfo.direction = 'E';
+    pushInfo.numSpaces = doorLoc[boxNum][0] - boxLoc[boxNum][0];
+  }
+  else if (boxLoc[boxNum][0] > doorLoc[boxNum][0])
+  {
+    pushInfo.direction = 'W';
+    pushInfo.numSpaces = boxLoc[boxNum][0] - doorLoc[boxNum];
+  }
+
+  return pushInfo;
+}
