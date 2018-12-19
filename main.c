@@ -10,6 +10,21 @@
 #include <time.h>
 //
 #include "gl_frontEnd.h"
+#define DEBUG_GRID 1
+/**
+ * Constants for grid representation
+ */
+#define EMPTY 0
+#define ROBOT 1
+#define DOOR 2
+#define BOX 3
+/**
+ * Constants for movement clarification
+ */
+#define NORTH 0
+#define SOUTH 1
+#define EAST 2
+#define WEST 3
 
 //==================================================================================
 //	Function prototypes
@@ -371,6 +386,35 @@ void initializeApplication(void) {
     for (int i = 0; i < numDoors + (numBoxes * 2); i++) {
         free(check[i]);
     }
+    //Populate the grid with our values
+    for(int i = 0;i < numDoors;i++){
+        //Temp variables for our row and column
+        int r,c;
+        r = doorLoc[i][0];
+        c = doorLoc[i][1];
+        grid[r][c] = DOOR;
+
+    }
+    for(int i = 0;i < numBoxes;i++){
+        int r,c;
+        r = robotLoc[i][0];
+        c = robotLoc[i][1];
+        grid[r][c] = ROBOT;
+        r = boxLoc[i][0];
+        c = boxLoc[i][1];
+        grid[r][c] = BOX;
+    }
+//
+//    if(DEBUG_GRID){
+//        for(int i = 0;i < numRows){
+//            for(int j = 0;j < numCols){
+//                printf("%d");
+//                printf("%d");
+//                printf("%d");
+//                printf("%d");
+//            }
+//        }
+//    }
     //	normally, here I would initialize the location of my doors, boxes,
     //	and robots, and create threads (not necessarily in that order).
     //	For the handout I have nothing to do.
