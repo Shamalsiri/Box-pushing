@@ -31,9 +31,14 @@
 
 
 struct pushData {
+    //number of spaces the box needs to travel still
     int numSpaces;
+    //direction the box needs to travel in
     int direction;
+    //the box/robot we are referring to
     int boxId;
+    //the side of the robot that the box is against
+    int boxSide;
 };
 
 //==================================================================================
@@ -312,7 +317,7 @@ void move(struct pushData *data) {
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
-                    printf("North is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
+                    printf("North is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,
                            grid[col][(row + 1)], col,
                            (row + 1));
             }
@@ -321,40 +326,37 @@ void move(struct pushData *data) {
             //Critical Area
             if (row > 0 && grid[col][row - 1] == EMPTY) {
                 if (DEBUG_MOVE)
-                    printf("South is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row - 1);
+                    printf("South is free for robot %d. Moving South to (%d,%d).\n", data->boxId, col, row - 1);
                 grid[col][(row - 1)] = ROBOT;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
-                    printf("South is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
-                           grid[col][(row - 1)], col,
-                           (row - 1));
+                    printf("South is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId, col, (row - 1));
             }
             break;
         case EAST:
             //Critical Area
             if (col < numCols - 1 && grid[col + 1][row] == EMPTY) {
                 if (DEBUG_MOVE)
-                    printf("East is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col + 1, row);
+                    printf("East is free for robot %d. Moving East to (%d,%d).\n", data->boxId, col + 1, row);
                 grid[col + 1][row] = ROBOT;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
-                    printf("East is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
-                           grid[col + 1][row], col + 1, row);
+                    printf("East is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,col + 1, row);
             }
             break;
         case WEST:
             //Critical Area
             if (col > 0 && grid[col - 1][row] == EMPTY) {
                 if (DEBUG_MOVE)
-                    printf("West is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col + 1, row);
+                    printf("West is free for robot %d. Moving West to (%d,%d).\n", data->boxId, col - 1, row);
                 grid[col - 1][row] = ROBOT;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
-                    printf("West is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
-                           grid[col - 1][row], col + 1, row);
+                    printf("West is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,
+                           col - 1, row);
             }
             break;
     }
