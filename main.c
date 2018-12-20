@@ -25,6 +25,7 @@
 #define SOUTH 1
 #define EAST 2
 #define WEST 3
+#define IN_PLACE 4
 
 //==================================================================================
 //	Function prototypes
@@ -46,8 +47,9 @@ extern int gMainWindow, gSubwindow[2];
 
 struct pushData
 {
-  char direction;
   int numSpaces;
+  int direction;
+  int boxId;
 };
 
 //	Don't rename any of these variables
@@ -245,6 +247,22 @@ int checkForDupe(int row, int column, int **checkList, int checkIndex) {
         }
     }
     return 0;
+}
+void move(struct pushData* data){
+    int myRobot = data->boxId;
+    float[] botLoc = {robotLoc[myRobot][0],robotLoc[myRobot][1]};
+    if(data->direction == NORTH){
+//        if(botLoc[1])
+    } else if( data->direction == SOUTH){
+
+    } else if( data->direction == EAST){
+
+    } else if( data->direction== WEST){
+
+    }
+}
+void push(struct pushData data){
+
 }
 //==================================================================================
 //
