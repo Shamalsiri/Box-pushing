@@ -613,13 +613,13 @@ void initializeApplication(void) {
 struct pushData *initializeBot(int botNum) {
   //we neee to Check if grid boxX, boxY-1 is available
   // if boxX and boxY -1 is available
-  robotLoc[botNum][0] = boxLoc[botNum][0];
-  robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+  // robotLoc[botNum][0] = boxLoc[botNum][0];
+  // robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
 
   struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
   if (boxLoc[botNum][0] == robotLoc[botNum][0])
   {
-    if (boxLoc[botNum][1] == robotLoc[botNum][1])
+    if (boxLoc[botNum][1]-1 == robotLoc[botNum][1] || boxLoc[botNum][1]+1 == robotLoc[botNum][1])
     {
       pushInfo->direction = 4;
       pushInfo->numSpaces = 0;
@@ -633,7 +633,7 @@ struct pushData *initializeBot(int botNum) {
     }
   } else if (boxLoc[botNum][1] == robotLoc[botNum][1])
   {
-    if (boxLoc[botNum][0] == robotLoc[botNum][0])
+    if (boxLoc[botNum][0]-1 == robotLoc[botNum][0] || boxLoc[botNum][0]+1 == robotLoc[botNum][0])
     {
       pushInfo->direction = 4;
       pushInfo->numSpaces = 0;
@@ -719,6 +719,6 @@ struct pushData *compBoxnDoor(int boxNum) {
         pushInfo->boxSide = 4; // 4 == to the left of the box
       }
     }
-    
+
     return pushInfo;
 }
