@@ -8,9 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <zconf.h>
 //
 #include "gl_frontEnd.h"
+
 #define DEBUG_GRID 1
+#define DEBUG_MOVE 1
 /**
  * Constants for grid representation
  */
@@ -26,6 +29,13 @@
 #define WEST 3
 #define IN_PLACE 4
 
+
+struct pushData {
+    int numSpaces;
+    int direction;
+    int boxId;
+};
+
 //==================================================================================
 //	Function prototypes
 //==================================================================================
@@ -35,21 +45,19 @@ void displayStatePane(void);
 
 void initializeApplication(void);
 
+void move(struct pushData *);
+
+void printGrid();
 
 //==================================================================================
 //	Application-level global variables
 //==================================================================================
 
+
 //	Don't touch
 extern const int GRID_PANE, STATE_PANE;
 extern int gMainWindow, gSubwindow[2];
 
-struct pushData
-{
-  int numSpaces;
-  int direction;
-  int boxId;
-};
 
 //	Don't rename any of these variables
 //-------------------------------------
@@ -179,8 +187,8 @@ void slowdownRobots(void) {
 //------------------------------------------------------------------------
 int main(int argc, char **argv) {
     if (argc == 5) {
-        numRows = atoi(argv[1]);
-        numCols = atoi(argv[2]);
+        numCols = atoi(argv[1]);
+        numRows = atoi(argv[2]);
         numBoxes = atoi(argv[3]);
         numDoors = atoi(argv[4]);
         if ((numBoxes <= 0) || (numRows <= 0) || (numCols <= 0)) {
@@ -205,6 +213,23 @@ int main(int argc, char **argv) {
 
     //	Now we can do application-level initialization
     initializeApplication();
+
+
+    //****************Test Data***********************//
+    struct pushData *testData = (struct pushData *) malloc(sizeof(struct pushData));
+
+    testData->direction = WEST;
+    testData->boxId = 0;
+    printGrid();
+    myDisplay();
+    usleep(2000000);
+    move(testData);
+    printGrid();
+    usleep(2000000);
+    myDisplay();
+    //************************************************//
+
+
 
     //	Now we enter the main loop of the program and to a large extend
     //	"lose control" over its execution.  The callback functions that
@@ -247,10 +272,99 @@ int checkForDupe(int row, int column, int **checkList, int checkIndex) {
     }
     return 0;
 }
-void move(struct pushData* data){
+
+/**
+ * prints out the state grid for debugging purposes
+ */
+void printGrid() {
+    if (DEBUG_GRID) {
+        for (int i = numRows - 1; i >= 0; i--) {
+            for (int j = 0; j < numCols; j++) {
+                printf("%d ", grid[j][i]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+}
+
+/**
+ * Moves the selected robot in the desired direction if the space is empty
+ * If the space is not empty, we do nothing and hope that the next pass
+ * will be more fruitful
+ * @param data - struct holding the robot we are moving and the direction we
+ *                  are moving it
+ */
+void move(struct pushData *data) {
     int myRobot = data->boxId;
-    float botLoc[2] = {robotLoc[myRobot][0],robotLoc[myRobot][1]};
-    switch(data->direction){
+    int row, col;
+    float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
+    row = botLoc[1];
+    col = botLoc[0];
+    switch (data->direction) {
+        case NORTH:
+
+            //Critical area
+            if (row < numRows - 1 && grid[col][(row + 1)] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row - 1);
+                grid[col][(row + 1)] = ROBOT;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("North is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
+                           grid[col][(row + 1)], col,
+                           (row + 1));
+            }
+            break;
+        case SOUTH:
+            //Critical Area
+            if (row > 0 && grid[col][row - 1] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("South is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row - 1);
+                grid[col][(row - 1)] = ROBOT;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("South is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
+                           grid[col][(row - 1)], col,
+                           (row - 1));
+            }
+            break;
+        case EAST:
+            //Critical Area
+            if (col < numCols - 1 && grid[col + 1][row] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("East is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col + 1, row);
+                grid[col + 1][row] = ROBOT;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("East is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
+                           grid[col + 1][row], col + 1, row);
+            }
+            break;
+        case WEST:
+            //Critical Area
+            if (col > 0 && grid[col - 1][row] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("West is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col + 1, row);
+                grid[col - 1][row] = ROBOT;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("West is blocked for robot %d.\nI see a %d at coordinates (%d,%d).\n", data->boxId,
+                           grid[col - 1][row], col + 1, row);
+            }
+            break;
+    }
+    return;
+}
+
+void push(struct pushData *data) {
+    int myRobot = data->boxId;
+    float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
+    switch (data->direction) {
         case NORTH:
             break;
         case SOUTH:
@@ -260,9 +374,7 @@ void move(struct pushData* data){
         case WEST:
             break;
     }
-}
-void push(struct pushData data){
-
+    return;
 }
 //==================================================================================
 //
@@ -270,21 +382,27 @@ void push(struct pushData data){
 //
 //==================================================================================
 
-
+/**
+ * Reads in from the input file the number of rows and columns,
+ * the number of boxes(and therefore robots) and the number of doors.
+ * It then randomly places those onto the state grid and into the
+ * appropriate arrays, which assigns robots to boxes and boxes to doors.
+ * The function also writes all the initial states into a file output.txt
+ */
 void initializeApplication(void) {
     outputFile = fopen("output.txt", "w");
     if (outputFile == NULL) {
         printf("Problem writing to the file.\n");
         exit(4);
     }
-    fprintf(outputFile, "%d x %d Grid (Row x Col) with %d Boxes and %d Doors\n",
-            numRows, numCols, numBoxes, numDoors);
-    fprintf(outputFile, "\n");
+    fprintf(outputFile, "%d x %d Grid (Col x Row) with %d Boxes and %d Doors",
+            numCols, numRows, numBoxes, numDoors);
 
+    fprintf(outputFile, "\n");
     //	Allocate the grid
-    grid = (int **) calloc((size_t) numRows, sizeof(int *));
-    for (int i = 0; i < numRows; i++)
-        grid[i] = (int *) calloc((size_t) numCols, sizeof(int));
+    grid = (int **) calloc((size_t) numCols, sizeof(int *));
+    for (int i = 0; i < numCols; i++)
+        grid[i] = (int *) calloc((size_t) numRows, sizeof(int));
 
     message = (char **) malloc(MAX_NUM_MESSAGES * sizeof(char *));
     for (int k = 0; k < MAX_NUM_MESSAGES; k++)
@@ -317,26 +435,6 @@ void initializeApplication(void) {
     //we use this index as a limit for our check array so we are only checking
     //legitimate coordinates
     int checkIndex = 0;
-    //assign each door a location and a box to be associated
-    //with it
-    for (int i = 0; i < numDoors; i++) {
-        //door location
-        doorLoc[i][0] = rand() % numRows;
-        doorLoc[i][1] = rand() % numCols;
-        //check for duplicate entries
-        while (checkForDupe(doorLoc[i][0], doorLoc[i][1], check, checkIndex) == 1) {
-            srand((unsigned int) time(NULL));
-            doorLoc[i][1] = rand() % numRows;
-            doorLoc[i][0] = rand() % numCols;
-        }
-        fprintf(outputFile, "Door %d Location: (%d, %d)\n", i, doorLoc[i][0], doorLoc[i][1]);
-        check[checkIndex][1] = doorLoc[i][0];
-        check[checkIndex][0] = doorLoc[i][1];
-        randDoor = rand() % numDoors;
-        //assign the box associated with this door
-        doorAssign[i] = randDoor;
-        checkIndex++;
-    }
     fprintf(outputFile, "\n");
     //assign each box and robot an initial location
     for (int i = 0; i < numBoxes; i++) {
@@ -348,8 +446,8 @@ void initializeApplication(void) {
             robotLoc[i][1] = rand() % numRows;
             robotLoc[i][0] = rand() % numCols;
         }
-        check[checkIndex][1] = robotLoc[i][0];
-        check[checkIndex][0] = robotLoc[i][1];
+        check[checkIndex][1] = robotLoc[i][1];
+        check[checkIndex][0] = robotLoc[i][0];
         checkIndex++;
         randRow = rand() % numRows;
         randCol = rand() % numCols;
@@ -393,6 +491,29 @@ void initializeApplication(void) {
         checkIndex++;
 
     }
+
+    fprintf(outputFile, "\n");
+    //assign each door a location and a box to be associated
+    //with it
+    for (int i = 0; i < numDoors; i++) {
+        //door location
+        doorLoc[i][1] = rand() % numRows;
+        doorLoc[i][0] = rand() % numCols;
+        //check for duplicate entries
+        while (checkForDupe(doorLoc[i][0], doorLoc[i][1], check, checkIndex) == 1) {
+            srand((unsigned int) time(NULL));
+            doorLoc[i][1] = rand() % numRows;
+            doorLoc[i][0] = rand() % numCols;
+        }
+        fprintf(outputFile, "Door %d Location: (%d, %d)\n", i, doorLoc[i][0], doorLoc[i][1]);
+        check[checkIndex][1] = doorLoc[i][0];
+        check[checkIndex][0] = doorLoc[i][1];
+        randDoor = rand() % numDoors;
+        //assign the box associated with this door
+        doorAssign[i] = randDoor;
+        checkIndex++;
+    }
+
     fprintf(outputFile, "\n");
     //cycle through robot array to output the initial locations in the right order
     for (int i = 0; i < numBoxes; i++) {
@@ -405,88 +526,71 @@ void initializeApplication(void) {
         free(check[i]);
     }
     //Populate the grid with our values
-    for(int i = 0;i < numBoxes;i++){
-        int r,c;
+    for (int i = 0; i < numBoxes; i++) {
+        int r, c;
         r = robotLoc[i][1];
         c = robotLoc[i][0];
-        grid[r][c] = ROBOT;
+        grid[c][r] = ROBOT;
         r = boxLoc[i][1];
         c = boxLoc[i][0];
-        grid[r][c] = BOX;
+        grid[c][r] = BOX;
     }
 
-    if(DEBUG_GRID){
-        for(int i = numRows-1;i >= 0;i--){
-            for(int j = 0;j < numCols;j++){
-                printf("%d ",grid[i][j]);
-            }
-            printf("\n");
-        }
-    }
+    printGrid();
+
     //	normally, here I would initialize the location of my doors, boxes,
     //	and robots, and create threads (not necessarily in that order).
     //	For the handout I have nothing to do.
 }
-void initializeBot(int botNum)
-{
-  //we neee to Check if grid boxX, boxY-1 is available
-  // if boxX and boxY -1 is available
-  robotLoc[botNum][0] = boxLoc[botNum][0];
-  robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+
+void initializeBot(int botNum) {
+    //we neee to Check if grid boxX, boxY-1 is available
+    // if boxX and boxY -1 is available
+    robotLoc[botNum][0] = boxLoc[botNum][0];
+    robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
 }
 
-struct pushData compBoxnDoor(int boxNum)
-{
-  struct pushData pushInfo;
-  int doorId = doorAssign[boxNum];
+struct pushData *compBoxnDoor(int boxNum) {
+    //Allocating memory for the data struct we are passing
+    struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
 
-  if(boxLoc[boxNum][0] == doorLoc[doorId][0]) // if x is the same
-  {
-    if(boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
-    {
-      pushInfo->direction = 4; // A == 4
-      pushInfo->numSpaces = 0;
-    }
-    else if (boxLoc[boxNum][1] < doorLoc[doorId][1]) // if box is directly below the door
-    {
-      pushInfo->direction = 0; // N == 0
-      pushInfo->numSpaces = doorLoc[doorId][1] - boxLoc[boxNum][1];
+    int doorId = doorAssign[boxNum];
 
-    }
-    else
+    if (boxLoc[boxNum][0] == doorLoc[doorId][0]) // if x is the same
     {
-      pushInfo->direction = 1; // S == 1
-      pushInfo->numSpaces = boxLoc[boxNum][1] - doorLoc[doorId][1];
-    }
-  }
-  else if (boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
-  {
-    if (boxLoc[boxNum][0] == doorLoc[doorId][0]) // not sure if redundant
-    {
-      pushInfo->direction = 4;
-      pushInfo->numSpaces = 0;
-    }
-    else if (boxLoc[boxNum][0] < doorLoc[doorId][0])
-    {
-      pushInfo->direction = 2; // E == 2
-      pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
-    }
-    else
-    {
-      pushInfo->direction = 3; // W == 3
-      pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId][0];
-    }
-  }
-  else if (boxLoc[boxNum][0] < doorLoc[doorId][0])
-  {
-    pushInfo->direction = 2;
-    pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
-  }
-  else if (boxLoc[boxNum][0] > doorLoc[doorId][0])
-  {
-    pushInfo->direction = 3;
-    pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId];
-  }
+        if (boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
+        {
+            pushInfo->direction = 4; // A == 4
+            pushInfo->numSpaces = 0;
+        } else if (boxLoc[boxNum][1] < doorLoc[doorId][1]) // if box is directly below the door
+        {
+            pushInfo->direction = 0; // N == 0
+            pushInfo->numSpaces = doorLoc[doorId][1] - boxLoc[boxNum][1];
 
-  return pushInfo;
+        } else {
+            pushInfo->direction = 1; // S == 1
+            pushInfo->numSpaces = boxLoc[boxNum][1] - doorLoc[doorId][1];
+        }
+    } else if (boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
+    {
+        if (boxLoc[boxNum][0] == doorLoc[doorId][0]) // not sure if redundant
+        {
+            pushInfo->direction = 4;
+            pushInfo->numSpaces = 0;
+        } else if (boxLoc[boxNum][0] < doorLoc[doorId][0]) {
+            pushInfo->direction = 2; // E == 2
+            pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
+        } else {
+            pushInfo->direction = 3; // W == 3
+            pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId][0];
+        }
+    } else if (boxLoc[boxNum][0] < doorLoc[doorId][0]) {
+        pushInfo->direction = 2;
+        pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
+    } else if (boxLoc[boxNum][0] > doorLoc[doorId][0]) {
+        pushInfo->direction = 3;
+        pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId][0];
+    }
+
+    return pushInfo;
 }
