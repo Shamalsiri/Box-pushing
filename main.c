@@ -16,8 +16,7 @@
  */
 #define EMPTY 0
 #define ROBOT 1
-#define DOOR 2
-#define BOX 3
+#define BOX 2
 /**
  * Constants for movement clarification
  */
@@ -250,15 +249,16 @@ int checkForDupe(int row, int column, int **checkList, int checkIndex) {
 }
 void move(struct pushData* data){
     int myRobot = data->boxId;
-    float[] botLoc = {robotLoc[myRobot][0],robotLoc[myRobot][1]};
-    if(data->direction == NORTH){
-//        if(botLoc[1])
-    } else if( data->direction == SOUTH){
-
-    } else if( data->direction == EAST){
-
-    } else if( data->direction== WEST){
-
+    float botLoc[2] = {robotLoc[myRobot][0],robotLoc[myRobot][1]};
+    switch(data->direction){
+        case NORTH:
+            break;
+        case SOUTH:
+            break;
+        case EAST:
+            break;
+        case WEST:
+            break;
     }
 }
 void push(struct pushData data){
@@ -326,12 +326,12 @@ void initializeApplication(void) {
         //check for duplicate entries
         while (checkForDupe(doorLoc[i][0], doorLoc[i][1], check, checkIndex) == 1) {
             srand((unsigned int) time(NULL));
-            doorLoc[i][0] = rand() % numRows;
-            doorLoc[i][1] = rand() % numCols;
+            doorLoc[i][1] = rand() % numRows;
+            doorLoc[i][0] = rand() % numCols;
         }
         fprintf(outputFile, "Door %d Location: (%d, %d)\n", i, doorLoc[i][0], doorLoc[i][1]);
-        check[checkIndex][0] = doorLoc[i][0];
-        check[checkIndex][1] = doorLoc[i][1];
+        check[checkIndex][1] = doorLoc[i][0];
+        check[checkIndex][0] = doorLoc[i][1];
         randDoor = rand() % numDoors;
         //assign the box associated with this door
         doorAssign[i] = randDoor;
@@ -340,16 +340,16 @@ void initializeApplication(void) {
     fprintf(outputFile, "\n");
     //assign each box and robot an initial location
     for (int i = 0; i < numBoxes; i++) {
-        robotLoc[i][0] = rand() % numRows;
-        robotLoc[i][1] = rand() % numCols;
+        robotLoc[i][1] = rand() % numRows;
+        robotLoc[i][0] = rand() % numCols;
         //check for duplicate entries
         while (checkForDupe(robotLoc[i][0], robotLoc[i][1], check, checkIndex) == 1) {
             srand((unsigned int) time(NULL));
-            robotLoc[i][0] = rand() % numRows;
-            robotLoc[i][1] = rand() % numCols;
+            robotLoc[i][1] = rand() % numRows;
+            robotLoc[i][0] = rand() % numCols;
         }
-        check[checkIndex][0] = robotLoc[i][0];
-        check[checkIndex][1] = robotLoc[i][1];
+        check[checkIndex][1] = robotLoc[i][0];
+        check[checkIndex][0] = robotLoc[i][1];
         checkIndex++;
         randRow = rand() % numRows;
         randCol = rand() % numCols;
@@ -365,8 +365,8 @@ void initializeApplication(void) {
             randCol++;
         }
         //box location
-        boxLoc[i][0] = randRow;
-        boxLoc[i][1] = randCol;
+        boxLoc[i][1] = randRow;
+        boxLoc[i][0] = randCol;
         //check for duplicate entries
 
         while (checkForDupe(boxLoc[i][0], boxLoc[i][1], check, checkIndex) == 1) {
@@ -384,12 +384,12 @@ void initializeApplication(void) {
             } else if (randCol == 0) {
                 randCol++;
             }
-            boxLoc[i][0] = randRow;
-            boxLoc[i][1] = randCol;
+            boxLoc[i][1] = randRow;
+            boxLoc[i][0] = randCol;
         }
         fprintf(outputFile, "Box %d Initial Location: (%d, %d)\n", i, boxLoc[i][0], boxLoc[i][1]);
-        check[checkIndex][0] = boxLoc[i][0];
         check[checkIndex][1] = boxLoc[i][1];
+        check[checkIndex][0] = boxLoc[i][0];
         checkIndex++;
 
     }
@@ -405,34 +405,24 @@ void initializeApplication(void) {
         free(check[i]);
     }
     //Populate the grid with our values
-    for(int i = 0;i < numDoors;i++){
-        //Temp variables for our row and column
-        int r,c;
-        r = doorLoc[i][0];
-        c = doorLoc[i][1];
-        grid[r][c] = DOOR;
-
-    }
     for(int i = 0;i < numBoxes;i++){
         int r,c;
-        r = robotLoc[i][0];
-        c = robotLoc[i][1];
+        r = robotLoc[i][1];
+        c = robotLoc[i][0];
         grid[r][c] = ROBOT;
-        r = boxLoc[i][0];
-        c = boxLoc[i][1];
+        r = boxLoc[i][1];
+        c = boxLoc[i][0];
         grid[r][c] = BOX;
     }
-//
-//    if(DEBUG_GRID){
-//        for(int i = 0;i < numRows){
-//            for(int j = 0;j < numCols){
-//                printf("%d");
-//                printf("%d");
-//                printf("%d");
-//                printf("%d");
-//            }
-//        }
-//    }
+
+    if(DEBUG_GRID){
+        for(int i = numRows-1;i >= 0;i--){
+            for(int j = 0;j < numCols;j++){
+                printf("%d ",grid[i][j]);
+            }
+            printf("\n");
+        }
+    }
     //	normally, here I would initialize the location of my doors, boxes,
     //	and robots, and create threads (not necessarily in that order).
     //	For the handout I have nothing to do.
