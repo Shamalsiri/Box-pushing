@@ -448,53 +448,54 @@ void initializeBot(int botNum)
 struct pushData compBoxnDoor(int boxNum)
 {
   struct pushData pushInfo;
+  int doorId = doorAssign[boxNum];
 
-  if(boxLoc[boxNum][0] == doorLoc[boxNum][0]) // if x is the same
+  if(boxLoc[boxNum][0] == doorLoc[doorId][0]) // if x is the same
   {
-    if(boxLoc[boxNum][1] == doorLoc[boxNum][1]) // if y is the same
+    if(boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
     {
-      pushInfo.direction = 'A';
-      pushInfo.numSpaces = 0;
+      pushInfo->direction = 4; // A == 4
+      pushInfo->numSpaces = 0;
     }
-    else if (boxLoc[boxNum][1] < doorLoc[boxNum][1]) // if box is directly below the door
+    else if (boxLoc[boxNum][1] < doorLoc[doorId][1]) // if box is directly below the door
     {
-      pushInfo.direction = 'N';
-      pushInfo.numSpaces = doorLoc[boxNum][1] - boxLoc[boxNum][1];
+      pushInfo->direction = 0; // N == 0
+      pushInfo->numSpaces = doorLoc[doorId][1] - boxLoc[boxNum][1];
 
     }
     else
     {
-      pushInfo.direction = 'S';
-      pushInfo.numSpaces = boxLoc[boxNum][1] - doorLoc[boxNum][1];
+      pushInfo->direction = 1; // S == 1
+      pushInfo->numSpaces = boxLoc[boxNum][1] - doorLoc[doorId][1];
     }
   }
-  else if (boxLoc[boxNum][1] == doorLoc[boxNum][1]) // if y is the same
+  else if (boxLoc[boxNum][1] == doorLoc[doorId][1]) // if y is the same
   {
-    if (boxLoc[boxNum][0] == doorLoc[boxNum][0]) // not sure if redundant
+    if (boxLoc[boxNum][0] == doorLoc[doorId][0]) // not sure if redundant
     {
-      pushInfo.direction = 'A';
-      pushInfo.numSpaces = 0;
+      pushInfo->direction = 4;
+      pushInfo->numSpaces = 0;
     }
-    else if (boxLoc[boxNum][0] < doorLoc[boxNum][0])
+    else if (boxLoc[boxNum][0] < doorLoc[doorId][0])
     {
-      pushInfo.direction = 'E';
-      pushInfo.numSpaces = doorLoc[boxNum][0] - boxLoc[boxNum][0];
+      pushInfo->direction = 2; // E == 2
+      pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
     }
     else
     {
-      pushInfo.direction = 'W';
-      pushInfo.numSpaces = boxLoc[boxNum][0] - doorLoc[boxNum][0];
+      pushInfo->direction = 3; // W == 3
+      pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId][0];
     }
   }
-  else if (boxLoc[boxNum][0] < doorLoc[boxNum][0])
+  else if (boxLoc[boxNum][0] < doorLoc[doorId][0])
   {
-    pushInfo.direction = 'E';
-    pushInfo.numSpaces = doorLoc[boxNum][0] - boxLoc[boxNum][0];
+    pushInfo->direction = 2;
+    pushInfo->numSpaces = doorLoc[doorId][0] - boxLoc[boxNum][0];
   }
-  else if (boxLoc[boxNum][0] > doorLoc[boxNum][0])
+  else if (boxLoc[boxNum][0] > doorLoc[doorId][0])
   {
-    pushInfo.direction = 'W';
-    pushInfo.numSpaces = boxLoc[boxNum][0] - doorLoc[boxNum];
+    pushInfo->direction = 3;
+    pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId];
   }
 
   return pushInfo;
