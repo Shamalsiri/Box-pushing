@@ -700,5 +700,25 @@ struct pushData *compBoxnDoor(int boxNum) {
         pushInfo->numSpaces = boxLoc[boxNum][0] - doorLoc[doorId][0];
     }
 
+    if (boxLoc[boxNum][0] == robotLoc[boxNum][0])
+    {
+      if(boxLoc[boxNum][1] > robotLoc[boxNum][1])
+      {
+        pushInfo->boxSide = 2; // 2 == underneath the box
+      }else if (boxLoc[boxNum][1] < robotLoc[boxNum][1])
+      {
+        pushInfo->boxSide = 1; // 1 == above the box
+      }
+    } else if (boxLoc[boxNum][1] == robotLoc[boxNum][1])
+    {
+      if(boxLoc[boxNum][0] < robotLoc[boxNum][0])
+      {
+          pushInfo->boxSide = 3; // 3 == to the right of the box
+      } else if(boxLoc[boxNum][0] > robotLoc[boxNum][0])
+      {
+        pushInfo->boxSide = 4; // 4 == to the left of the box
+      }
+    }
+    
     return pushInfo;
 }
