@@ -61,6 +61,8 @@ void move(struct pushData *);
 
 void printGrid();
 
+struct pushData *initializeBot(int botNum) ;
+
 //==================================================================================
 //	Application-level global variables
 //==================================================================================
@@ -143,13 +145,17 @@ void displayGridPane(void) {
     glutSetWindow(gMainWindow);
 }
 
+
 void displayStatePane(void) {
+
     //	This is OpenGL/glut magic.  Don't touch
     glutSetWindow(gSubwindow[STATE_PANE]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
+    for(int i = 0; i < numBoxes; i++){
+        move(initializeBot(i));
+    }
     //	Here I hard-code a few messages that I want to see displayed
     //	in my state pane.  The number of live robot threads will
     //	always get displayed.  No need to pass a message about it.
@@ -228,16 +234,14 @@ int main(int argc, char **argv) {
 
 
     //****************Test Data***********************//
-    struct pushData *testData = (struct pushData *) malloc(sizeof(struct pushData));
-
-    testData->direction = WEST;
-    testData->boxId = 0;
-    myDisplay();
-    usleep(2000000);
-    move(testData);
-    printGrid();
-    usleep(2000000);
-    myDisplay();
+//    struct pushData *testData = (struct pushData *) malloc(sizeof(struct pushData));
+//
+//    testData->direction = SOUTH;
+//    testData->boxId = 0;
+//    myDisplay();
+//    usleep(2000000);
+//    move(testData);
+//    printGrid();
     //************************************************//
 
 
@@ -377,6 +381,9 @@ void move(struct pushData *data) {
             printf("Error in movement Integer.");
             break;
     }
+    free(data);
+    usleep(500000);
+    myDisplay();
     return;
 }
 void rotate(int myInitialPosition, int direction){
@@ -613,13 +620,14 @@ void initializeApplication(void) {
 struct pushData *initializeBot(int botNum) {
   //we neee to Check if grid boxX, boxY-1 is available
   // if boxX and boxY -1 is available
-  // robotLoc[botNum][0] = boxLoc[botNum][0];
-  // robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+//  robotLoc[botNum][0] = boxLoc[botNum][0];
+//  robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
 
   struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
+  pushInfo->boxId=botNum;
   if (boxLoc[botNum][0] == robotLoc[botNum][0])
   {
-    if (boxLoc[botNum][1]-1 == robotLoc[botNum][1] || boxLoc[botNum][1]+1 == robotLoc[botNum][1])
+    if (boxLoc[botNum][1] == robotLoc[botNum][1])
     {
       pushInfo->direction = 4;
       pushInfo->numSpaces = 0;
@@ -633,7 +641,7 @@ struct pushData *initializeBot(int botNum) {
     }
   } else if (boxLoc[botNum][1] == robotLoc[botNum][1])
   {
-    if (boxLoc[botNum][0]-1 == robotLoc[botNum][0] || boxLoc[botNum][0]+1 == robotLoc[botNum][0])
+    if (boxLoc[botNum][0] == robotLoc[botNum][0])
     {
       pushInfo->direction = 4;
       pushInfo->numSpaces = 0;
@@ -719,6 +727,6 @@ struct pushData *compBoxnDoor(int boxNum) {
         pushInfo->boxSide = 4; // 4 == to the left of the box
       }
     }
-
+    
     return pushInfo;
 }
