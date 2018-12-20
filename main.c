@@ -153,9 +153,7 @@ void displayStatePane(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    for(int i = 0; i < numBoxes; i++){
-        move(initializeBot(i));
-    }
+
     //	Here I hard-code a few messages that I want to see displayed
     //	in my state pane.  The number of live robot threads will
     //	always get displayed.  No need to pass a message about it.
@@ -163,7 +161,10 @@ void displayStatePane(void) {
     sprintf(message[0], "We have %d doors", numDoors);
     sprintf(message[1], "I like cheese");
     sprintf(message[2], "System time is %ld", time(NULL));
-
+    for(int i = 0; i < numBoxes; i++){
+        move(initializeBot(i));
+    }
+    usleep(500000);
     //---------------------------------------------------------
     //	This is the call that makes OpenGL render information
     //	about the state of the simulation.
@@ -382,8 +383,6 @@ void move(struct pushData *data) {
             break;
     }
     free(data);
-    usleep(500000);
-    myDisplay();
     return;
 }
 void rotate(int myInitialPosition, int direction){
