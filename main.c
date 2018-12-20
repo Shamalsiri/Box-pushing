@@ -29,6 +29,13 @@
 #define WEST 3
 #define IN_PLACE 4
 
+/**
+ * Constants for robot rotate function
+ */
+#define RIGHT 0
+#define LEFT 1
+
+
 
 struct pushData {
     //number of spaces the box needs to travel still
@@ -225,7 +232,6 @@ int main(int argc, char **argv) {
 
     testData->direction = WEST;
     testData->boxId = 0;
-    printGrid();
     myDisplay();
     usleep(2000000);
     move(testData);
@@ -303,17 +309,19 @@ void printGrid() {
 void move(struct pushData *data) {
     int myRobot = data->boxId;
     int row, col;
-    float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
-    row = botLoc[1];
-    col = botLoc[0];
+    float itemLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
+    row = itemLoc[1];
+    col = itemLoc[0];
     switch (data->direction) {
         case NORTH:
 
             //Critical area
             if (row < numRows - 1 && grid[col][(row + 1)] == EMPTY) {
                 if (DEBUG_MOVE)
-                    printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row - 1);
+                    printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row + 1);
                 grid[col][(row + 1)] = ROBOT;
+                robotLoc[myRobot][0] = col;
+                robotLoc[myRobot][1] = row + 1;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
@@ -328,6 +336,8 @@ void move(struct pushData *data) {
                 if (DEBUG_MOVE)
                     printf("South is free for robot %d. Moving South to (%d,%d).\n", data->boxId, col, row - 1);
                 grid[col][(row - 1)] = ROBOT;
+                robotLoc[myRobot][0] = col;
+                robotLoc[myRobot][1] = row - 1;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
@@ -340,10 +350,12 @@ void move(struct pushData *data) {
                 if (DEBUG_MOVE)
                     printf("East is free for robot %d. Moving East to (%d,%d).\n", data->boxId, col + 1, row);
                 grid[col + 1][row] = ROBOT;
+                robotLoc[myRobot][0] = col+1;
+                robotLoc[myRobot][1] = row;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
-                    printf("East is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,col + 1, row);
+                    printf("East is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId, col + 1, row);
             }
             break;
         case WEST:
@@ -352,6 +364,8 @@ void move(struct pushData *data) {
                 if (DEBUG_MOVE)
                     printf("West is free for robot %d. Moving West to (%d,%d).\n", data->boxId, col - 1, row);
                 grid[col - 1][row] = ROBOT;
+                robotLoc[myRobot][0] = col-1;
+                robotLoc[myRobot][1] = row;
                 grid[col][row] = EMPTY;
             } else {
                 if (DEBUG_MOVE)
@@ -359,21 +373,72 @@ void move(struct pushData *data) {
                            col - 1, row);
             }
             break;
+        default:
+            printf("Error in movement Integer.");
+            break;
     }
     return;
 }
+void rotate(int myInitialPosition, int direction){
 
+}
 void push(struct pushData *data) {
     int myRobot = data->boxId;
+    int myDirection = data->direction;
+    int myBoxSide = data->boxSide;
     float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
-    switch (data->direction) {
+    //handle the different cases
+    switch (myDirection) {
         case NORTH:
+            switch (myBoxSide) {
+                case NORTH:
+                    break;
+                case SOUTH:
+                    break;
+                case EAST:
+                    break;
+                case WEST:
+                    break;
+            }
             break;
         case SOUTH:
+            switch (myBoxSide) {
+                case NORTH:
+                    break;
+                case SOUTH:
+                    break;
+                case EAST:
+                    break;
+                case WEST:
+                    break;
+            }
             break;
         case EAST:
+            switch (myBoxSide) {
+                case NORTH:
+                    break;
+                case SOUTH:
+                    break;
+                case EAST:
+                    break;
+                case WEST:
+                    break;
+            }
             break;
         case WEST:
+            switch (myBoxSide) {
+                case NORTH:
+                    break;
+                case SOUTH:
+                    break;
+                case EAST:
+                    break;
+                case WEST:
+                    break;
+            }
+            break;
+        default:
+            printf("Error in movement Integer.");
             break;
     }
     return;
