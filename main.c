@@ -545,11 +545,52 @@ void initializeApplication(void) {
     //	For the handout I have nothing to do.
 }
 
-void initializeBot(int botNum) {
-    //we neee to Check if grid boxX, boxY-1 is available
-    // if boxX and boxY -1 is available
-    robotLoc[botNum][0] = boxLoc[botNum][0];
-    robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+struct pushData *initializeBot(int botNum) {
+  //we neee to Check if grid boxX, boxY-1 is available
+  // if boxX and boxY -1 is available
+  robotLoc[botNum][0] = boxLoc[botNum][0];
+  robotLoc[botNum][1] = boxLoc[botNum][1] - 1;
+
+  struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
+  if (boxLoc[botNum][0] == robotLoc[botNum][0])
+  {
+    if (boxLoc[botNum][1] == robotLoc[botNum][1])
+    {
+      pushInfo->direction = 4;
+      pushInfo->numSpaces = 0;
+    } else if (robotLoc[botNum][1] < boxLoc[botNum][1])
+    {
+      pushInfo->direction = 0;
+      pushInfo->numSpaces = boxLoc[botNum][1] - robotLoc[botNum][1];
+    } else {
+      pushInfo->direction = 1;
+      pushInfo->numSpaces = robotLoc[botNum][1] - boxLoc[botNum][1];
+    }
+  } else if (boxLoc[botNum][1] == robotLoc[botNum][1])
+  {
+    if (boxLoc[botNum][0] == robotLoc[botNum][0])
+    {
+      pushInfo->direction = 4;
+      pushInfo->numSpaces = 0;
+    } else if (boxLoc[botNum][0] < robotLoc[botNum][0])
+    {
+      pushInfo->direction = 3;
+      pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+    } else
+    {
+      pushInfo->direction = 2;
+      pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0];
+    }
+  } else if (boxLoc[botNum][0] < robotLoc[botNum][0])
+  {
+    pushInfo->direction = 3;
+    pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+  } else if (boxLoc[botNum][0] > robotLoc[botNum][0])
+  {
+    pushInfo->direction = 2;
+    pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+  }
+  return pushInfo;
 }
 
 struct pushData *compBoxnDoor(int boxNum) {
