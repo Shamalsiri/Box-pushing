@@ -838,13 +838,17 @@ struct pushData *initializeBot(int botNum) {
     pushInfo->direction = 2;
     pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
   }
+  if( (robotLoc[botNum][0] == boxLoc[botNum][0] && abs(robotLoc[botNum][1] - boxLoc[botNum][1])==1) ||
+      (robotLoc[botNum][1] == boxLoc[botNum][1] && abs(robotLoc[botNum][0] - boxLoc[botNum][0])==1) ){
+      pushInfo->direction = IN_PLACE;
+  }
   return pushInfo;
 }
 
 struct pushData *compBoxnDoor(int boxNum) {
     //Allocating memory for the data struct we are passing
     struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
-
+    pushInfo->boxId = boxNum;
     int doorId = doorAssign[boxNum];
 
     if (boxLoc[boxNum][0] == doorLoc[doorId][0]) // if x is the same
