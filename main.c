@@ -829,41 +829,41 @@ void initializeApplication(void) {
 }
 
 struct pushData *initializeBot(int botNum) {
-
+    //Allocating memory for the data struct we are passing
     struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
     pushInfo->boxId = botNum;
-    if (boxLoc[botNum][0] == robotLoc[botNum][0]) {
-        if (boxLoc[botNum][1] == robotLoc[botNum][1]) {
-            pushInfo->direction = 4;
+    if (boxLoc[botNum][0] == robotLoc[botNum][0]) { // If Xs are the same
+        if (boxLoc[botNum][1] == robotLoc[botNum][1]) { // if the Ys are the same
+            pushInfo->direction = IN_PLACE; // Robot in positon
             pushInfo->numSpaces = 0;
-        } else if (robotLoc[botNum][1] < boxLoc[botNum][1]) {
-            pushInfo->direction = NORTH;
-            pushInfo->numSpaces = boxLoc[botNum][1] - robotLoc[botNum][1];
+        } else if (robotLoc[botNum][1] < boxLoc[botNum][1]) { // robot is below the box
+            pushInfo->direction = NORTH; // Move north
+            pushInfo->numSpaces = boxLoc[botNum][1] - robotLoc[botNum][1]; // num spaces need to move
         } else {
-            pushInfo->direction = 1;
-            pushInfo->numSpaces = robotLoc[botNum][1] - boxLoc[botNum][1];
+            pushInfo->direction = SOUTH; // Move south
+            pushInfo->numSpaces = robotLoc[botNum][1] - boxLoc[botNum][1]; // num spaces need to move
         }
-    } else if (boxLoc[botNum][1] == robotLoc[botNum][1]) {
-        if (boxLoc[botNum][0] == robotLoc[botNum][0]) {
-            pushInfo->direction = 4;
+    } else if (boxLoc[botNum][1] == robotLoc[botNum][1]) { // If the Ys are the same
+        if (boxLoc[botNum][0] == robotLoc[botNum][0]) { // If Xs are the same
+            pushInfo->direction = IN_PLACE; // Robot in positon
             pushInfo->numSpaces = 0;
-        } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) {
-            pushInfo->direction = 3;
-            pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
-        } else {
-            pushInfo->direction = 2;
-            pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0];
+        } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) { // The box is to the left of the bot
+            pushInfo->direction = WEST; // Move west
+            pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0]; // num spaces need to move
+        } else { // The box is to the right of the bot
+            pushInfo->direction = EAST; // move east
+            pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0]; // num spaces need to move
         }
-    } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) {
-        pushInfo->direction = 3;
-        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
-    } else if (boxLoc[botNum][0] > robotLoc[botNum][0]) {
-        pushInfo->direction = 2;
-        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+    } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) { // The box is to the left of the bot
+        pushInfo->direction = WEST; // Move west
+        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0]; // num spaces need to move
+    } else if (boxLoc[botNum][0] > robotLoc[botNum][0]) { // The box is to the right of the bot
+        pushInfo->direction = EAST; // move east
+        pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0]; // num spaces need to move
     }
     if ((robotLoc[botNum][0] == boxLoc[botNum][0] && abs(robotLoc[botNum][1] - boxLoc[botNum][1]) == 1) ||
         (robotLoc[botNum][1] == boxLoc[botNum][1] && abs(robotLoc[botNum][0] - boxLoc[botNum][0]) == 1)) {
-        pushInfo->direction = IN_PLACE;
+        pushInfo->direction = IN_PLACE; // Box is in place
     }
     return pushInfo;
 }
