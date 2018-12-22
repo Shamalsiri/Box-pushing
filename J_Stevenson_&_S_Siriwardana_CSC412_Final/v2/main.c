@@ -1,6 +1,6 @@
 //  John Stevenson
 //  Shamal Siriwardana
-//  main.c
+//  Version: 2
 //  Final Project CSC412
 //
 //  Created by Jean-Yves Hervé on 2018-12-05
@@ -11,11 +11,13 @@
 #include <stdlib.h>
 #include <time.h>
 #include <zconf.h>
+#include <pthread.h>
 //
 #include "gl_frontEnd.h"
 /**
  * Debugging print statement switches
  */
+#define DEBUG_START 1
 #define DEBUG_GRID 0
 #define DEBUG_MOVE 0
 /**
@@ -68,7 +70,7 @@ void push(struct pushData *);
 
 struct pushData *compBoxnDoor(int);
 
-void startRobot(int);
+void* startRobot(void*);
 
 void end(int);
 
@@ -132,6 +134,9 @@ char **message;
 //File that we output to
 char *outputFile = "output.txt";
 
+//file mutex lock
+pthread_mutex_t fileLock;
+
 //==================================================================================
 //	These are the functions that tie the simulation with the rendering.
 //	Some parts are "don't touch."  Other parts need your intervention
@@ -141,10 +146,14 @@ char *outputFile = "output.txt";
 /**
  * Method that starts and runs a robot
  */
-void startRobot(int robotNum) {
+void* startRobot(void* botNum) {
     /**
      * Movement of the robot
      */
+        //cast the incoming data
+        int robotNum = *(int*)botNum;
+        if(DEBUG_START)
+        printf("Robot %d started.\n",robotNum);
         //initialize a data structure we can read the results of and assign
         //it as the return of our first initialize call
         while (isDone[robotNum] == FALSE) {
@@ -172,11 +181,10 @@ void startRobot(int robotNum) {
                 //free function call data
                 free(tempData);
             }
-            //v1 call to mydisplay to update the display
             usleep(robotSleepTime);
-            myDisplay();
         }
-    return;
+        free(botNum);
+        pthread_exit(&botNum);
 }
 /**
  * Clears the robot from the board when its tasks are complete
@@ -189,6 +197,7 @@ void end(int robotNum){
     grid[robotLoc[robotNum][0]][robotLoc[robotNum][1]] = EMPTY;
     grid[boxLoc[robotNum][0]][boxLoc[robotNum][1]] = EMPTY;
 }
+
 void displayGridPane(void) {
     //	This is OpenGL/glut magic.  Don't touch
     glutSetWindow(gSubwindow[GRID_PANE]);
@@ -237,6 +246,7 @@ void displayStatePane(void) {
             counter++;
         }
     }
+    numLiveThreads = numBoxes-counter;
     sprintf(message[0], "Doors: %d", numDoors);
     sprintf(message[1], "Active Robots:  %d",numBoxes-counter);
     sprintf(message[2], "Robots Finished: %d", counter);
@@ -275,11 +285,6 @@ void slowdownRobots(void) {
     robotSleepTime = (12 * robotSleepTime) / 10;
 }
 
-
-//------------------------------------------------------------------------
-//	You shouldn't have to change anything in the main function besides
-//	the initialization of numRows, numCos, numDoors, numBoxes.
-//------------------------------------------------------------------------
 int main(int argc, char **argv) {
     if (argc == 5) {
         numCols = atoi(argv[1]);
@@ -380,6 +385,8 @@ void move(struct pushData *data) {
 
     //Robot and box id number
     int myRobot = data->boxId;
+
+    pthread_mutex_lock(&fileLock);
     FILE *output = fopen(outputFile,"a");
     //row and column of robot that is moving
     int row, col;
@@ -439,6 +446,8 @@ void move(struct pushData *data) {
 
     //close the file
     fclose(output);
+
+    pthread_mutex_unlock(&fileLock);
     //if the debug_grid switch is set to 1, this will print
     printGrid();
     return;
@@ -455,8 +464,7 @@ void push(struct pushData *data) {
     int myBoxSide = data->boxSide;
     float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
 
-    //file to write to
-    FILE *output = fopen(outputFile,"a");
+
 
     //struct to handle reposition calls to move
     struct pushData *rotateData = (struct pushData *) calloc(1, sizeof(struct pushData));
@@ -478,7 +486,12 @@ void push(struct pushData *data) {
                     grid[col][row + 1] = ROBOT;
                     robotLoc[myRobot][1] = row + 1;
                     boxLoc[myRobot][1] = row + 2;
+                    //lock the file to write to and open it
+                    FILE *output = fopen(outputFile,"a");
+                    pthread_mutex_lock(&fileLock);
                     fprintf(output,"robot %d push N\n",myRobot);
+                    fclose(output);
+                    pthread_mutex_unlock(&fileLock);
                     break;
                 case SOUTH:
                     //the box is on our south side
@@ -529,7 +542,12 @@ void push(struct pushData *data) {
                     grid[col][row - 2] = BOX;
                     robotLoc[myRobot][1] = row - 1;
                     boxLoc[myRobot][1] = row - 2;
+                    //lock the file to write to and open it
+                    FILE *output = fopen(outputFile,"a");
+                    pthread_mutex_lock(&fileLock);
                     fprintf(output,"robot %d push S\n",myRobot);
+                    fclose(output);
+                    pthread_mutex_unlock(&fileLock);
                     break;
                 case EAST:
                     //and the box is on our east side
@@ -579,7 +597,12 @@ void push(struct pushData *data) {
                     grid[col + 1][row] = ROBOT;
                     robotLoc[myRobot][0] = col + 1;
                     boxLoc[myRobot][0] = col + 2;
+                    //lock the file to write to and open it
+                    FILE *output = fopen(outputFile,"a");
+                    pthread_mutex_lock(&fileLock);
                     fprintf(output,"robot %d push E\n",myRobot);
+                    fclose(output);
+                    pthread_mutex_unlock(&fileLock);
                     break;
                 case WEST:
                     //and the box is on our west side
@@ -630,7 +653,12 @@ void push(struct pushData *data) {
                     grid[col - 1][row] = ROBOT;
                     robotLoc[myRobot][0] = col - 1;
                     boxLoc[myRobot][0] = col - 2;
+                    //lock the file to write to and open it
+                    FILE *output = fopen(outputFile,"a");
+                    pthread_mutex_lock(&fileLock);
                     fprintf(output,"robot %d push W\n",myRobot);
+                    fclose(output);
+                    pthread_mutex_unlock(&fileLock);
                     break;
             }
             break;
@@ -643,17 +671,12 @@ void push(struct pushData *data) {
             exit(2);
             break;
     }
-    fclose(output);
+
     free(rotateData);
     //if the debug_grid switch is set to 1, this will print the state grid
     printGrid();
     return;
 }
-//==================================================================================
-//
-//	This is a part that you have to edit and add to.
-//
-//==================================================================================
 
 /**
  * Reads in from the input file the number of rows and columns,
@@ -665,6 +688,9 @@ void push(struct pushData *data) {
 void initializeApplication(void) {
     //allocate the memory for the array showing if the bots are done
     isDone = (int *) calloc(numBoxes, sizeof(int));
+
+    //initialize the file lock
+    pthread_mutex_init(&fileLock,NULL);
 
     //Set up the file we output to
     FILE *output = fopen(outputFile, "w");
@@ -846,9 +872,21 @@ void initializeApplication(void) {
 
     printGrid();
     //run the robots
+    //initialize pthread id's and attr
+    pthread_t botThread[numBoxes];
+    pthread_attr_t attr;
+
+    pthread_attr_init(&attr);
     for(int i = 0;i < numBoxes; i++){
-        startRobot(i);
+        //allocate space for the data we pass(robot number)
+        int* data = calloc(1,sizeof(int*));
+        *data = i;
+        //create the thread and free the allocated data inside the thread when it finishes
+        pthread_create(&botThread[i],&attr,startRobot,data);
+        //detach the thread
+        pthread_detach(botThread[i]);
     }
+    return;
 }
 /** Compare the location of the box and it's respective robot's location
  * Calculate the step the robot needs to take to move toward the box
