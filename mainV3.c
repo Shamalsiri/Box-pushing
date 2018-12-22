@@ -66,9 +66,7 @@ void push(struct pushData *);
 
 struct pushData *compBoxnDoor(int);
 
-void startRobot(int);
-
-void end(int);
+void updateRobots();
 
 //==================================================================================
 //	Application-level global variables
@@ -128,7 +126,7 @@ const int MAX_LENGTH_MESSAGE = 32;
 char **message;
 
 //File that we output to
-char *outputFile = "output.txt";
+FILE *outputFile;
 
 //==================================================================================
 //	These are the functions that tie the simulation with the rendering.
@@ -137,58 +135,67 @@ char *outputFile = "output.txt";
 //==================================================================================
 
 /**
- * Method that starts and runs a robot
+ * Method that updates the location of the robots individually, one iteration
  */
-void startRobot(int robotNum) {
+void updateRobots(){
     /**
-     * Movement of the robot
+     * Movement of the robots, one at a time
      */
+    usleep(robotSleepTime);
+    //for every robot
+    for (int i = 0; i < numBoxes; i++) {
         //initialize a data structure we can read the results of and assign
         //it as the return of our first initialize call
-        while (isDone[robotNum] == FALSE) {
-            struct pushData *tempData = initializeBot(robotNum);
+        if(isDone[i] == FALSE) {
+            struct pushData *tempData = initializeBot(i);
             //if the robot is not in place
             if (tempData->direction != IN_PLACE) {
                 //we set the array to not done
-                isDone[robotNum] = FALSE;
+                isDone[i] = FALSE;
                 //move based on our function call
                 move(tempData);
                 //free the function call data
                 free(tempData);
             } else {
                 //if the robot is in place but we aren't done yet
-                if (isDone[robotNum] == FALSE) {
+                if (isDone[i] == FALSE) {
                     //call the method that gets our push information
-                    tempData = compBoxnDoor(robotNum);
+                    tempData = compBoxnDoor(i);
                     //push that information
                     push(tempData);
                     //if we are in place again
                     if (tempData->direction == IN_PLACE) {
-                        end(robotNum);
+                        //we set our done state to true
+                        isDone[i] = TRUE;
+                        //update the grid locations to have the locations removed
+                        grid[robotLoc[i][0]][robotLoc[i][1]] = EMPTY;
+                        grid[boxLoc[i][0]][boxLoc[i][1]] = EMPTY;
                     }
                 }
                 //free function call data
                 free(tempData);
             }
-            //v1 call to mydisplay to update the display
-            usleep(robotSleepTime);
-            myDisplay();
         }
+    }
     return;
 }
-void end(int robotNum){
-    //we set our done state to true
-    isDone[robotNum] = TRUE;
-    //update the grid locations to have the locations removed
-    grid[robotLoc[robotNum][0]][robotLoc[robotNum][1]] = EMPTY;
-    grid[boxLoc[robotNum][0]][boxLoc[robotNum][1]] = EMPTY;
-}
+
 void displayGridPane(void) {
     //	This is OpenGL/glut magic.  Don't touch
     glutSetWindow(gSubwindow[GRID_PANE]);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+    //-----------------------------
+    //	CHANGE THIS
+    //-----------------------------
+    //	Here I hard-code myself some data for robots and doors.  Obviously this code
+    //	this code must go away.  I just want to show you how to display the information
+    //	about a robot-box pair or a door.
+
+    //update our robot states
+    updateRobots();
 
     for (int i = 0; i < numBoxes; i++) {
         //	here I would test if the robot thread is still live
@@ -224,16 +231,14 @@ void displayStatePane(void) {
     //	Here I hard-code a few messages that I want to see displayed
     //	in my state pane.  The number of live robot threads will
     //	always get displayed.  No need to pass a message about it.
-    int numMessages = 3;
-    int counter = 0;
-    for(int i = 0; i< numBoxes;i++){
-        if(isDone[i] == TRUE){
-            counter++;
-        }
+    int numMessages = numBoxes;
+    for(int i = 0; i < numBoxes;i++){
+
     }
-    sprintf(message[0], "Doors: %d", numDoors);
-    sprintf(message[1], "Active Robots:  %d",numBoxes-counter);
-    sprintf(message[2], "Robots Finished: %d", counter);
+
+    sprintf(message[0], "We have %d doors", numDoors);
+    sprintf(message[1], "I like cheese");
+    sprintf(message[2], "System time is %ld", time(NULL));
 
     //---------------------------------------------------------
     //	This is the call that makes OpenGL render information
@@ -374,7 +379,7 @@ void move(struct pushData *data) {
 
     //Robot and box id number
     int myRobot = data->boxId;
-    FILE *output = fopen(outputFile,"a");
+
     //row and column of robot that is moving
     int row, col;
     float itemLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
@@ -386,43 +391,70 @@ void move(struct pushData *data) {
     switch (data->direction) {
         //Moving North
         case NORTH:
-            if (DEBUG_MOVE)
-                printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row + 1);
-            grid[col][(row + 1)] = ROBOT;
-            robotLoc[myRobot][0] = col;
-            robotLoc[myRobot][1] = row + 1;
-            grid[col][row] = EMPTY;
-            fprintf(output,"robot %d move N\n",myRobot);
+            //Critical area
+            //Check if the area north is free, if so we move, if not we do nothing
+            if (row < numRows - 1 && grid[col][(row + 1)] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row + 1);
+                grid[col][(row + 1)] = ROBOT;
+                robotLoc[myRobot][0] = col;
+                robotLoc[myRobot][1] = row + 1;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("North is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,
+                           col,
+                           (row + 1));
+            }
             break;
             //Moving South
         case SOUTH:
-            if (DEBUG_MOVE)
-                printf("South is free for robot %d. Moving South to (%d,%d).\n", data->boxId, col, row - 1);
-            grid[col][(row - 1)] = ROBOT;
-            robotLoc[myRobot][0] = col;
-            robotLoc[myRobot][1] = row - 1;
-            grid[col][row] = EMPTY;
-            fprintf(output,"robot %d move S\n",myRobot);
+            //Check if the area south is free, if so we move, if not we do nothing
+            //Critical Area
+            if (row > 0 && grid[col][row - 1] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("South is free for robot %d. Moving South to (%d,%d).\n", data->boxId, col, row - 1);
+                grid[col][(row - 1)] = ROBOT;
+                robotLoc[myRobot][0] = col;
+                robotLoc[myRobot][1] = row - 1;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("South is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId, col, (row - 1));
+            }
             break;
             //Moving East
         case EAST:
-            if (DEBUG_MOVE)
-                printf("East is free for robot %d. Moving East to (%d,%d).\n", data->boxId, col + 1, row);
-            grid[col + 1][row] = ROBOT;
-            robotLoc[myRobot][0] = col + 1;
-            robotLoc[myRobot][1] = row;
-            grid[col][row] = EMPTY;
-            fprintf(output,"robot %d move E\n",myRobot);
+            //Check if the area east is free, if so we move, if not we do nothing
+            //Critical Area
+            if (col < numCols - 1 && grid[col + 1][row] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("East is free for robot %d. Moving East to (%d,%d).\n", data->boxId, col + 1, row);
+                grid[col + 1][row] = ROBOT;
+                robotLoc[myRobot][0] = col + 1;
+                robotLoc[myRobot][1] = row;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("East is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId, col + 1, row);
+            }
             break;
             //Moving West
         case WEST:
-            if (DEBUG_MOVE)
-                printf("West is free for robot %d. Moving West to (%d,%d).\n", data->boxId, col - 1, row);
-            grid[col - 1][row] = ROBOT;
-            robotLoc[myRobot][0] = col - 1;
-            robotLoc[myRobot][1] = row;
-            grid[col][row] = EMPTY;
-            fprintf(output,"robot %d move W\n",myRobot);
+            //Check if the area west is free, if so we move, if not we do nothing
+            //Critical Area
+            if (col > 0 && grid[col - 1][row] == EMPTY) {
+                if (DEBUG_MOVE)
+                    printf("West is free for robot %d. Moving West to (%d,%d).\n", data->boxId, col - 1, row);
+                grid[col - 1][row] = ROBOT;
+                robotLoc[myRobot][0] = col - 1;
+                robotLoc[myRobot][1] = row;
+                grid[col][row] = EMPTY;
+            } else {
+                if (DEBUG_MOVE)
+                    printf("West is blocked for robot %d trying coordinates (%d,%d).\n", data->boxId,
+                           col - 1, row);
+            }
             break;
         default:
             //If we have something other than our expected values we print an error and exit out
@@ -430,14 +462,10 @@ void move(struct pushData *data) {
             exit(2);
             break;
     }
-
-    //close the file
-    fclose(output);
     //if the debug_grid switch is set to 1, this will print
     printGrid();
     return;
 }
-
 /**
  * Pushes the box of a specific robot in a specific direction
  * @param data - pushData struct with box/robot number, direction of the push, and location of box relative to robot
@@ -448,9 +476,6 @@ void push(struct pushData *data) {
     int myDirection = data->direction;
     int myBoxSide = data->boxSide;
     float botLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
-
-    //file to write to
-    FILE *output = fopen(outputFile,"a");
 
     //struct to handle reposition calls to move
     struct pushData *rotateData = (struct pushData *) calloc(1, sizeof(struct pushData));
@@ -464,180 +489,181 @@ void push(struct pushData *data) {
     switch (myDirection) {
         case NORTH:
             switch (myBoxSide) {
-                //if we need to move north, we rotate appropriately for the case we have and then push
                 case NORTH:
-                    //and the box is on our north side
-                    grid[col][row] = EMPTY;
-                    grid[col][row + 2] = BOX;
-                    grid[col][row + 1] = ROBOT;
-                    robotLoc[myRobot][1] = row + 1;
-                    boxLoc[myRobot][1] = row + 2;
-                    fprintf(output,"robot %d push N\n",myRobot);
+                    if (grid[col][row + 2] == EMPTY) {
+                        grid[col][row] = EMPTY;
+                        grid[col][row + 2] = BOX;
+                        grid[col][row + 1] = ROBOT;
+                        robotLoc[myRobot][1] = row + 1;
+                        boxLoc[myRobot][1] = row + 2;
+                    }
                     break;
                 case SOUTH:
-                    //the box is on our south side
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    rotateData->direction = SOUTH;
-                    move(rotateData);
-                    data->boxSide = WEST;
-                    push(data);
+                    if (grid[col + 1][row] == EMPTY && grid[col + 1][row - 1] == EMPTY) {
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        rotateData->direction = SOUTH;
+                        move(rotateData);
+                        data->boxSide = WEST;
+                        push(data);
+                    }
                     break;
-
                 case EAST:
-                    //the box is on our east side
-                    rotateData->direction = SOUTH;
-                    move(rotateData);
-                    rotateData->direction = EAST;
-                    move(rotateData);
-                    data->boxSide = NORTH;
-                    push(data);
+                    if (grid[col][row - 1] == EMPTY && grid[col + 1][row - 1] == EMPTY) {
+                        rotateData->direction = SOUTH;
+                        move(rotateData);
+                        rotateData->direction = EAST;
+                        move(rotateData);
+                        data->boxSide = NORTH;
+                        push(data);
+                    }
                     break;
                 case WEST:
-                    //the box is on our west side
-                    rotateData->direction = SOUTH;
-                    move(rotateData);
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    data->boxSide = NORTH;
-                    push(data);
+                    if (grid[col][row - 1] == EMPTY && grid[col - 1][row - 1] == EMPTY) {
+                        rotateData->direction = SOUTH;
+                        move(rotateData);
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        data->boxSide = NORTH;
+                        push(data);
+                    }
                     break;
             }
             break;
         case SOUTH:
-            //if we need to move south, we rotate appropriately for the case we have and then push
             switch (myBoxSide) {
                 case NORTH:
-                    //and the box is on our north side
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    data->boxSide = EAST;
-                    push(data);
+                    if (grid[col - 1][row] == EMPTY && grid[col - 1][row + 1] == EMPTY) {
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        data->boxSide = EAST;
+                        push(data);
+                    }
                     break;
                 case SOUTH:
-                    //and the box is on our south side
-                    grid[col][row] = EMPTY;
-                    grid[col][row - 1] = ROBOT;
-                    grid[col][row - 2] = BOX;
-                    robotLoc[myRobot][1] = row - 1;
-                    boxLoc[myRobot][1] = row - 2;
-                    fprintf(output,"robot %d push S\n",myRobot);
+                    if (grid[col][row - 2] == EMPTY) {
+                        grid[col][row] = EMPTY;
+                        grid[col][row - 1] = ROBOT;
+                        grid[col][row - 2] = BOX;
+                        robotLoc[myRobot][1] = row - 1;
+                        boxLoc[myRobot][1] = row - 2;
+                    }
                     break;
                 case EAST:
-                    //and the box is on our east side
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    rotateData->direction = EAST;
-                    move(rotateData);
-                    data->boxSide = SOUTH;
-                    push(data);
+                    if (grid[col][row + 1] == EMPTY && grid[col + 1][row + 1] == EMPTY) {
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        rotateData->direction = EAST;
+                        move(rotateData);
+                        data->boxSide = SOUTH;
+                        push(data);
+                    }
                     break;
                 case WEST:
-                    //and the box is on our west side
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    data->boxSide = SOUTH;
-                    push(data);
+                    if (grid[col][row + 1] == EMPTY && grid[col - 1][row + 1] == EMPTY) {
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        data->boxSide = SOUTH;
+                        push(data);
+                    }
                     break;
             }
             break;
         case EAST:
-            //if we need to move east, we rotate appropriately for the case we have and then push
             switch (myBoxSide) {
                 case NORTH:
-                    //and the box is on our north side
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    data->boxSide = EAST;
-                    push(data);
+                    if (grid[col - 1][row] == EMPTY && grid[col - 1][row + 1] == EMPTY) {
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        data->boxSide = EAST;
+                        push(data);
+                    }
                     break;
                 case SOUTH:
-                    //and the box is on our south side
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    rotateData->direction = SOUTH;
-                    move(rotateData);
-                    data->boxSide = EAST;
-                    push(data);
+                    if (grid[col - 1][row] == EMPTY && grid[col - 1][row - 1] == EMPTY) {
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        rotateData->direction = SOUTH;
+                        move(rotateData);
+                        data->boxSide = EAST;
+                        push(data);
+                    }
                     break;
                 case EAST:
-                    //and the box is on our east side
-                    grid[col][row] = EMPTY;
-                    grid[col + 2][row] = BOX;
-                    grid[col + 1][row] = ROBOT;
-                    robotLoc[myRobot][0] = col + 1;
-                    boxLoc[myRobot][0] = col + 2;
-                    fprintf(output,"robot %d push E\n",myRobot);
+                    if (grid[col + 2][row] == EMPTY) {
+                        grid[col][row] = EMPTY;
+                        grid[col + 2][row] = BOX;
+                        grid[col + 1][row] = ROBOT;
+                        robotLoc[myRobot][0] = col + 1;
+                        boxLoc[myRobot][0] = col + 2;
+                    }
                     break;
                 case WEST:
-                    //and the box is on our west side
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    rotateData->direction = WEST;
-                    move(rotateData);
-                    data->boxSide = SOUTH;
-                    push(data);
+                    if (grid[col][row + 1] == EMPTY && grid[col - 1][row + 1] == EMPTY) {
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        rotateData->direction = WEST;
+                        move(rotateData);
+                        data->boxSide = SOUTH;
+                        push(data);
+                    }
                     break;
 
             }
             break;
         case WEST:
-            //if we need to move west, we rotate appropriately for the case we have and then push
             switch (myBoxSide) {
                 case NORTH:
-                    //and the box is on our north side
-                    rotateData->direction = EAST;
-                    move(rotateData);
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    data->boxSide = WEST;
-                    push(data);
+                    if (grid[col + 1][row] == EMPTY && grid[col + 1][row + 1] == EMPTY) {
+                        rotateData->direction = EAST;
+                        move(rotateData);
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        data->boxSide = WEST;
+                        push(data);
+                    }
                     break;
                 case SOUTH:
-                    //and the box is on our south side
-                    rotateData->direction = EAST;
-                    move(rotateData);
-                    rotateData->direction = SOUTH;
-                    move(rotateData);
-                    data->boxSide = WEST;
-                    push(data);
+                    if (grid[col + 1][row] == EMPTY && grid[col + 1][row - 1] == EMPTY) {
+                        rotateData->direction = EAST;
+                        move(rotateData);
+                        rotateData->direction = SOUTH;
+                        move(rotateData);
+                        data->boxSide = WEST;
+                        push(data);
+                    }
                     break;
                 case EAST:
-                    //and the box is on our east side
-                    rotateData->direction = NORTH;
-                    move(rotateData);
-                    rotateData->direction = EAST;
-                    move(rotateData);
-                    data->boxSide = SOUTH;
-                    push(data);
+                    if (grid[col][row + 1] == EMPTY && grid[col + 1][row + 1] == EMPTY) {
+                        rotateData->direction = NORTH;
+                        move(rotateData);
+                        rotateData->direction = EAST;
+                        move(rotateData);
+                        data->boxSide = SOUTH;
+                        push(data);
+                    }
                     break;
                 case WEST:
-                    //and the box is on our west side
-                    grid[col][row] = EMPTY;
-                    grid[col - 2][row] = BOX;
-                    grid[col - 1][row] = ROBOT;
-                    robotLoc[myRobot][0] = col - 1;
-                    boxLoc[myRobot][0] = col - 2;
-                    fprintf(output,"robot %d push W\n",myRobot);
+                    if (grid[col - 2][row] == EMPTY) {
+                        grid[col][row] = EMPTY;
+                        grid[col - 2][row] = BOX;
+                        grid[col - 1][row] = ROBOT;
+                        robotLoc[myRobot][0] = col - 1;
+                        boxLoc[myRobot][0] = col - 2;
+                    }
                     break;
             }
             break;
-        case IN_PLACE:
-            //if it is already in place, we do nothing
-            break;
         default:
-            //if we don't recognize the movement command
             printf("Error in movement Integer.");
-            exit(2);
             break;
     }
-    fclose(output);
     free(rotateData);
     //if the debug_grid switch is set to 1, this will print the state grid
     printGrid();
@@ -658,21 +684,21 @@ void push(struct pushData *data) {
  */
 void initializeApplication(void) {
     //allocate the memory for the array showing if the bots are done
-    isDone = (int *) calloc(numBoxes, sizeof(int));
+    isDone = (int*)calloc(numBoxes,sizeof(int));
 
     //Set up the file we output to
-    FILE *output = fopen(outputFile, "w");
+    outputFile = fopen("output.txt", "w");
 
     //check for an error
-    if (output == NULL) {
+    if (outputFile == NULL) {
         printf("Problem writing to the file.\n");
         exit(4);
     }
 
     //output parameters to the file
-    fprintf(output, "%d x %d Grid (Col x Row) with %d Boxes and %d Doors",
+    fprintf(outputFile, "%d x %d Grid (Col x Row) with %d Boxes and %d Doors",
             numCols, numRows, numBoxes, numDoors);
-    fprintf(output, "\n");
+    fprintf(outputFile, "\n");
 
     //	Allocate the grid
     grid = (int **) calloc((size_t) numCols, sizeof(int *));
@@ -684,19 +710,15 @@ void initializeApplication(void) {
 
     //	seed the pseudo-random generator
     srand((unsigned int) time(NULL));
-
     //allocate memory for our global arrays
     robotLoc = (int **) calloc((size_t) numBoxes, sizeof(int *));
     boxLoc = (int **) calloc((size_t) numBoxes, sizeof(int *));
     doorAssign = (int *) calloc((size_t) numBoxes, sizeof(int));
     doorLoc = (int **) calloc((size_t) numDoors, sizeof(int *));
-
-    //allocate memory for the box and robot location lists
     for (int i = 0; i < numBoxes; i++) {
         robotLoc[i] = (int *) calloc(2, sizeof(int));
         boxLoc[i] = (int *) calloc(2, sizeof(int));
     }
-    //allocate memory for the door location list
     for (int i = 0; i < numDoors; i++) {
         doorLoc[i] = (int *) calloc(2, sizeof(int));
     }
@@ -705,23 +727,30 @@ void initializeApplication(void) {
     int randRow;
     int randCol;
     int randDoor;
-
     //we use this array to make sure that we don't have duplicate locations
     int **check = (int **) calloc((size_t) numDoors + (numBoxes * 2), sizeof(int *));
     for (int i = 0; i < numDoors + (numBoxes * 2); i++) {
         check[i] = (int *) calloc(2, sizeof(int));
     }
-
     //we use this index as a limit for our check array so we are only checking
     //legitimate coordinates
     int checkIndex = 0;
-    fprintf(output, "\n");
-    //assign each box to a spot in the grid
+    fprintf(outputFile, "\n");
+    //assign each box and robot an initial location
     for (int i = 0; i < numBoxes; i++) {
-        //generate new random numbers
+        robotLoc[i][1] = rand() % numRows;
+        robotLoc[i][0] = rand() % numCols;
+        //check for duplicate entries
+        while (checkForDupe(robotLoc[i][0], robotLoc[i][1], check, checkIndex) == 1) {
+            srand((unsigned int) time(NULL));
+            robotLoc[i][1] = rand() % numRows;
+            robotLoc[i][0] = rand() % numCols;
+        }
+        check[checkIndex][1] = robotLoc[i][1];
+        check[checkIndex][0] = robotLoc[i][0];
+        checkIndex++;
         randRow = rand() % numRows;
         randCol = rand() % numCols;
-
         //make sure the box isn't on the edge of the grid
         if (randRow == numRows - 1) {
             randRow--;
@@ -733,14 +762,12 @@ void initializeApplication(void) {
         } else if (randCol == 0) {
             randCol++;
         }
-
         //box location
         boxLoc[i][1] = randRow;
         boxLoc[i][0] = randCol;
-
         //check for duplicate entries
+
         while (checkForDupe(boxLoc[i][0], boxLoc[i][1], check, checkIndex) == 1) {
-            //if we need to reroll, we reseed the generator
             srand((unsigned int) time(NULL));
             randRow = rand() % numRows;
             randCol = rand() % numCols;
@@ -758,33 +785,14 @@ void initializeApplication(void) {
             boxLoc[i][1] = randRow;
             boxLoc[i][0] = randCol;
         }
-        //assign to check list and increment counter
+        fprintf(outputFile, "Box %d Initial Location: (%d, %d)\n", i, boxLoc[i][0], boxLoc[i][1]);
         check[checkIndex][1] = boxLoc[i][1];
         check[checkIndex][0] = boxLoc[i][0];
         checkIndex++;
 
     }
-    //assign each robot an initial location
-    for (int i = 0; i < numBoxes; i++) {
-        robotLoc[i][1] = rand() % numRows;
-        robotLoc[i][0] = rand() % numCols;
 
-        //check for duplicate entries
-        while (checkForDupe(robotLoc[i][0], robotLoc[i][1], check, checkIndex) == 1) {
-            //reseed random for rerolls
-            srand((unsigned int) time(NULL));
-            robotLoc[i][1] = rand() % numRows;
-            robotLoc[i][0] = rand() % numCols;
-        }
-        //assign the entry to the check list
-        check[checkIndex][1] = robotLoc[i][1];
-        check[checkIndex][0] = robotLoc[i][0];
-
-        //increment our length counter
-        checkIndex++;
-    }
-
-
+    fprintf(outputFile, "\n");
     //assign each door a location and a box to be associated
     //with it
     for (int i = 0; i < numDoors; i++) {
@@ -793,36 +801,26 @@ void initializeApplication(void) {
         doorLoc[i][0] = rand() % numCols;
         //check for duplicate entries
         while (checkForDupe(doorLoc[i][0], doorLoc[i][1], check, checkIndex) == 1) {
-            //reseed random for rerolls
             srand((unsigned int) time(NULL));
             doorLoc[i][1] = rand() % numRows;
             doorLoc[i][0] = rand() % numCols;
         }
-        //print to the file the location of the door
-        fprintf(output, "Door %d Location: (%d, %d)\n", i, doorLoc[i][0], doorLoc[i][1]);
-        //add location to check list
+        fprintf(outputFile, "Door %d Location: (%d, %d)\n", i, doorLoc[i][0], doorLoc[i][1]);
         check[checkIndex][1] = doorLoc[i][0];
         check[checkIndex][0] = doorLoc[i][1];
-        //increment the counter
-        checkIndex++;
-        //pick a random robot/box pair for the door
         randDoor = rand() % numDoors;
         //assign the box associated with this door
         doorAssign[i] = randDoor;
+        checkIndex++;
     }
-    fprintf(output, "\n");
-    //for each box, print its location in the output file
-    for (int i = 0; i < numBoxes; i++) {
-        fprintf(output, "Box %d Initial Location: (%d, %d)\n", i, boxLoc[i][0], boxLoc[i][1]);
-    }
-    fprintf(output, "\n");
+
+    fprintf(outputFile, "\n");
     //cycle through robot array to output the initial locations in the right order
     for (int i = 0; i < numBoxes; i++) {
-        fprintf(output, "Robot %d Initial Location: (%d, %d) with a goal of Door %d\n",
+        fprintf(outputFile, "Robot %d Initial Location: (%d, %d) with a goal of Door %d\n",
                 i, robotLoc[i][0], robotLoc[i][1], doorAssign[i]);
     }
-    fprintf(output,"\n");
-    fclose(output);
+    fclose(outputFile);
     //once the coordinates are initialized, we can free our check array
     for (int i = 0; i < numDoors + (numBoxes * 2); i++) {
         free(check[i]);
@@ -839,48 +837,48 @@ void initializeApplication(void) {
     }
 
     printGrid();
-    //run the robots
-    for(int i = 0;i < numBoxes; i++){
-        startRobot(i);
-    }
+
+    //	normally, here I would initialize the location of my doors, boxes,
+    //	and robots, and create threads (not necessarily in that order).
+    //	For the handout I have nothing to do.
 }
 
 struct pushData *initializeBot(int botNum) {
-    //Allocating memory for the data struct we are passing
+
     struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
     pushInfo->boxId = botNum;
-    if (boxLoc[botNum][0] == robotLoc[botNum][0]) { // If Xs are the same
-        if (boxLoc[botNum][1] == robotLoc[botNum][1]) { // if the Ys are the same
-            pushInfo->direction = IN_PLACE; // Robot in positon
+    if (boxLoc[botNum][0] == robotLoc[botNum][0]) {
+        if (boxLoc[botNum][1] == robotLoc[botNum][1]) {
+            pushInfo->direction = 4;
             pushInfo->numSpaces = 0;
-        } else if (robotLoc[botNum][1] < boxLoc[botNum][1]) { // robot is below the box
-            pushInfo->direction = NORTH; // Move north
-            pushInfo->numSpaces = boxLoc[botNum][1] - robotLoc[botNum][1]; // num spaces need to move
+        } else if (robotLoc[botNum][1] < boxLoc[botNum][1]) {
+            pushInfo->direction = NORTH;
+            pushInfo->numSpaces = boxLoc[botNum][1] - robotLoc[botNum][1];
         } else {
-            pushInfo->direction = SOUTH; // Move south
-            pushInfo->numSpaces = robotLoc[botNum][1] - boxLoc[botNum][1]; // num spaces need to move
+            pushInfo->direction = 1;
+            pushInfo->numSpaces = robotLoc[botNum][1] - boxLoc[botNum][1];
         }
-    } else if (boxLoc[botNum][1] == robotLoc[botNum][1]) { // If the Ys are the same
-        if (boxLoc[botNum][0] == robotLoc[botNum][0]) { // If Xs are the same
-            pushInfo->direction = IN_PLACE; // Robot in positon
+    } else if (boxLoc[botNum][1] == robotLoc[botNum][1]) {
+        if (boxLoc[botNum][0] == robotLoc[botNum][0]) {
+            pushInfo->direction = 4;
             pushInfo->numSpaces = 0;
-        } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) { // The box is to the left of the bot
-            pushInfo->direction = WEST; // Move west
-            pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0]; // num spaces need to move
-        } else { // The box is to the right of the bot
-            pushInfo->direction = EAST; // move east
-            pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0]; // num spaces need to move
+        } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) {
+            pushInfo->direction = 3;
+            pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+        } else {
+            pushInfo->direction = 2;
+            pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0];
         }
-    } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) { // The box is to the left of the bot
-        pushInfo->direction = WEST; // Move west
-        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0]; // num spaces need to move
-    } else if (boxLoc[botNum][0] > robotLoc[botNum][0]) { // The box is to the right of the bot
-        pushInfo->direction = EAST; // move east
-        pushInfo->numSpaces = boxLoc[botNum][0] - robotLoc[botNum][0]; // num spaces need to move
+    } else if (boxLoc[botNum][0] < robotLoc[botNum][0]) {
+        pushInfo->direction = 3;
+        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
+    } else if (boxLoc[botNum][0] > robotLoc[botNum][0]) {
+        pushInfo->direction = 2;
+        pushInfo->numSpaces = robotLoc[botNum][0] - boxLoc[botNum][0];
     }
     if ((robotLoc[botNum][0] == boxLoc[botNum][0] && abs(robotLoc[botNum][1] - boxLoc[botNum][1]) == 1) ||
         (robotLoc[botNum][1] == boxLoc[botNum][1] && abs(robotLoc[botNum][0] - boxLoc[botNum][0]) == 1)) {
-        pushInfo->direction = IN_PLACE; // Box is in place
+        pushInfo->direction = IN_PLACE;
     }
     return pushInfo;
 }
