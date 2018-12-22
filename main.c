@@ -14,8 +14,8 @@
 /**
  * Debugging print statement switches
  */
-#define DEBUG_GRID 1
-#define DEBUG_MOVE 1
+#define DEBUG_GRID 0
+#define DEBUG_MOVE 0
 /**
  * Boolean State values for robots
  */
@@ -60,7 +60,7 @@ void move(struct pushData *);
 
 void printGrid();
 
-struct pushData *initializeBot(int);
+struct pushData *compBotnBox(int);
 
 void push(struct pushData *);
 
@@ -146,7 +146,7 @@ void startRobot(int robotNum) {
         //initialize a data structure we can read the results of and assign
         //it as the return of our first initialize call
         while (isDone[robotNum] == FALSE) {
-            struct pushData *tempData = initializeBot(robotNum);
+            struct pushData *tempData = compBotnBox(robotNum);
             //if the robot is not in place
             if (tempData->direction != IN_PLACE) {
                 //we set the array to not done
@@ -192,7 +192,7 @@ void displayGridPane(void) {
 
     for (int i = 0; i < numBoxes; i++) {
         //	here I would test if the robot thread is still live
-        if (isDone[i] == 0) {
+        if (isDone[i] == FALSE) {
             drawRobotAndBox(i, robotLoc[i][1], robotLoc[i][0], boxLoc[i][1], boxLoc[i][0], doorAssign[i]);
         }
     }
@@ -844,8 +844,12 @@ void initializeApplication(void) {
         startRobot(i);
     }
 }
-
-struct pushData *initializeBot(int botNum) {
+/** Compare the location of the box and it's respective robot's location
+ * Calculate the step the robot needs to take to move toward the box
+ * @param botNum   Bot number respective to the box
+ * @ret the move data in a struct
+ */
+struct pushData *compBotnBox(int botNum) {
     //Allocating memory for the data struct we are passing
     struct pushData *pushInfo = (struct pushData *) malloc(sizeof(struct pushData));
     pushInfo->boxId = botNum;
@@ -885,6 +889,11 @@ struct pushData *initializeBot(int botNum) {
     return pushInfo;
 }
 
+/** Compare the box location and it's door location
+ * calculate the number of steps and the direction the box needs to move
+ * @param  boxNUm   Box identifier
+ * @ret the data in the struct
+ */
 struct pushData *compBoxnDoor(int boxNum) {
     //Allocating memory for the data struct we are passing
     struct pushData *pushInfo = (struct pushData *) calloc(1, sizeof(struct pushData));
