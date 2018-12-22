@@ -3,6 +3,7 @@
 //  Final Project CSC412
 //
 //  Created by Jean-Yves Hervé on 2018-12-05
+//  Finished by John Stevenson and Shamal Siriwardana
 //	This is public domain code.  By all means appropriate it and change is to your
 //	heart's content.
 #include <stdio.h>
@@ -401,7 +402,9 @@ void move(struct pushData *data) {
     switch (data->direction) {
         //Moving North
         case NORTH:
+            //try and lock our destination
             pthread_mutex_lock(&gridLock[col][row+1]);
+            //when we get the lock we can push the box and free out current square
             if (DEBUG_MOVE)
                 printf("North is free for robot %d. Moving North to (%d,%d).\n", data->boxId, col, row + 1);
             grid[col][(row + 1)] = ROBOT;
@@ -418,6 +421,7 @@ void move(struct pushData *data) {
             //Moving South
         case SOUTH:
             pthread_mutex_lock(&gridLock[col][row-1]);
+            //when we get the lock we can push the box and free out current square
             if (DEBUG_MOVE)
                 printf("South is free for robot %d. Moving South to (%d,%d).\n", data->boxId, col, row - 1);
             grid[col][(row - 1)] = ROBOT;
@@ -435,6 +439,7 @@ void move(struct pushData *data) {
             //Moving East
         case EAST:
             pthread_mutex_lock(&gridLock[col+1][row]);
+            //when we get the lock we can push the box and free out current square
             if (DEBUG_MOVE)
                 printf("East is free for robot %d. Moving East to (%d,%d).\n", data->boxId, col + 1, row);
             grid[col + 1][row] = ROBOT;
@@ -452,6 +457,7 @@ void move(struct pushData *data) {
             //Moving West
         case WEST:
             pthread_mutex_lock(&gridLock[col-1][row]);
+            //when we get the lock we can push the box and free out current square
             if (DEBUG_MOVE)
                 printf("West is free for robot %d. Moving West to (%d,%d).\n", data->boxId, col - 1, row);
             grid[col - 1][row] = ROBOT;
@@ -472,7 +478,7 @@ void move(struct pushData *data) {
             break;
     }
 
-
+    //unlock the file for other robots to write to it
     pthread_mutex_unlock(&fileLock);
     //if the debug_grid switch is set to 1, this will print
     printGrid();
@@ -507,6 +513,7 @@ void push(struct pushData *data) {
                 //if we need to move north, we rotate appropriately for the case we have and then push
                 case NORTH:
                     pthread_mutex_lock(&gridLock[col][row+2]);
+                    //when we get the lock we can push the box and free out current square
                     //and the box is on our north side
                     grid[col][row] = EMPTY;
                     pthread_mutex_unlock(&gridLock[col][row]);
@@ -566,6 +573,7 @@ void push(struct pushData *data) {
                 case SOUTH:
                     //and the box is on our south side
                     pthread_mutex_lock(&gridLock[col][row-2]);
+                    //when we get the lock we can push the box and free out current square
                     grid[col][row] = EMPTY;
                     pthread_mutex_unlock(&gridLock[col][row]);
                     grid[col][row - 1] = ROBOT;
@@ -623,6 +631,7 @@ void push(struct pushData *data) {
                 case EAST:
                     //and the box is on our east side
                     pthread_mutex_lock(&gridLock[col+2][row]);
+                    //when we get the lock we can push the box and free out current square
                     grid[col][row] = EMPTY;
                     pthread_mutex_unlock(&gridLock[col][row]);
                     grid[col + 2][row] = BOX;
@@ -681,6 +690,7 @@ void push(struct pushData *data) {
                 case WEST:
                     //and the box is on our west side
                     pthread_mutex_lock(&gridLock[col-2][row]);
+                    //when we get the lock we can push the box and free out current square
                     grid[col][row] = EMPTY;
                     pthread_mutex_unlock(&gridLock[col][row]);
                     grid[col - 2][row] = BOX;

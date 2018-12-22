@@ -3,6 +3,7 @@
 //  Final Project CSC412
 //
 //  Created by Jean-Yves Hervé on 2018-12-05
+//  Finished by John Stevenson and Shamal Siriwardana
 //	This is public domain code.  By all means appropriate it and change is to your
 //	heart's content.
 #include <stdio.h>
