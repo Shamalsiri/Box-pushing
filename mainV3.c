@@ -390,14 +390,12 @@ void move(struct pushData *data) {
     //Robot and box id number
     int myRobot = data->boxId;
 
-    pthread_mutex_lock(&fileLock);
-    FILE *output = fopen(outputFile,"a");
     //row and column of robot that is moving
     int row, col;
     float itemLoc[2] = {robotLoc[myRobot][0], robotLoc[myRobot][1]};
     row = itemLoc[1];
     col = itemLoc[0];
-
+    FILE *output;
     //Based on the direction data we move the robot in the direction we want
     //Updating the grid along the way
     switch (data->direction) {
@@ -411,7 +409,11 @@ void move(struct pushData *data) {
             robotLoc[myRobot][1] = row + 1;
             grid[col][row] = EMPTY;
             pthread_mutex_unlock(&gridLock[col][row]);
+            pthread_mutex_lock(&fileLock);
+            output = fopen(outputFile,"a");
             fprintf(output,"robot %d move N\n",myRobot);
+            //close the file
+            fclose(output);
             break;
             //Moving South
         case SOUTH:
@@ -423,7 +425,12 @@ void move(struct pushData *data) {
             robotLoc[myRobot][1] = row - 1;
             grid[col][row] = EMPTY;
             pthread_mutex_unlock(&gridLock[col][row]);
+
+            pthread_mutex_lock(&fileLock);
+            output = fopen(outputFile,"a");
             fprintf(output,"robot %d move S\n",myRobot);
+            //close the file
+            fclose(output);
             break;
             //Moving East
         case EAST:
@@ -435,7 +442,12 @@ void move(struct pushData *data) {
             robotLoc[myRobot][1] = row;
             grid[col][row] = EMPTY;
             pthread_mutex_unlock(&gridLock[col][row]);
+
+            pthread_mutex_lock(&fileLock);
+            output = fopen(outputFile,"a");
             fprintf(output,"robot %d move E\n",myRobot);
+            //close the file
+            fclose(output);
             break;
             //Moving West
         case WEST:
@@ -447,7 +459,11 @@ void move(struct pushData *data) {
             robotLoc[myRobot][1] = row;
             grid[col][row] = EMPTY;
             pthread_mutex_unlock(&gridLock[col][row]);
+            pthread_mutex_lock(&fileLock);
+            output = fopen(outputFile,"a");
             fprintf(output,"robot %d move W\n",myRobot);
+            //close the file
+            fclose(output);
             break;
         default:
             //If we have something other than our expected values we print an error and exit out
@@ -456,8 +472,6 @@ void move(struct pushData *data) {
             break;
     }
 
-    //close the file
-    fclose(output);
 
     pthread_mutex_unlock(&fileLock);
     //if the debug_grid switch is set to 1, this will print
@@ -867,6 +881,7 @@ void initializeApplication(void) {
         //increment the counter
         checkIndex++;
         //pick a random robot/box pair for the door
+        srand((unsigned int) time(NULL));
         randDoor = rand() % numDoors;
         //assign the box associated with this door
         doorAssign[i] = randDoor;
