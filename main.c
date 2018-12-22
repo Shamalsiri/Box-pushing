@@ -176,6 +176,10 @@ void startRobot(int robotNum) {
         }
     return;
 }
+/**
+ * Clears the robot from the board when its tasks are complete
+ * @param robotNum - robot number to clear
+ */
 void end(int robotNum){
     //we set our done state to true
     isDone[robotNum] = TRUE;
