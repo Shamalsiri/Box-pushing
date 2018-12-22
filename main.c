@@ -1,4 +1,5 @@
-//
+//  John Stevenson
+//  Shamal Siriwardana
 //  main.c
 //  Final Project CSC412
 //

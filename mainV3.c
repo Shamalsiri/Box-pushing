@@ -1,5 +1,6 @@
-//
-//  main.c
+//  John Stevenson
+//  Shamal Siriwardana
+//  mainV3.c
 //  Final Project CSC412
 //
 //  Created by Jean-Yves Hervé on 2018-12-05
